@@ -4,21 +4,19 @@ const tokenHelper = require("../helper/token-helper");
 const googleAuthService = require("../external-services/google/google-auth");
 
 const ensureAuthentication = async (req, res, next) => {
-  const refreshToken = tokenHelper.getToken(req);
+  const idToken = tokenHelper.getToken(req);
 
-  if (refreshToken === null) return res.status(401).send("Unauthorized user");
+  if (!idToken) return res.status(401).send("Invalid or expired token");
 
   try {
-    const token = await googleAuthService.refreshToken(refreshToken);
-    const user = jwt.decode(token["id_token"]);
+    const user = await googleAuthService.verifyIdToken(idToken);
 
     req.user = user;
+    next();
   } catch (error) {
-    res.status(401).send("Unauthorized user");
+    res.status(401).send("Invalid or expired token");
     return;
   }
-
-  next();
 };
 
 module.exports = ensureAuthentication;
